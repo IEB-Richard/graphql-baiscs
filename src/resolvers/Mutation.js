@@ -68,7 +68,7 @@ const Mutation = {
 
 		return user;
 	},
-	createPost(parent, args, { db }, info) {
+	createPost(parent, args, { db, pubsub }, info) {
 		const userExists = db.users.some((user) => user.id === args.data.author);
 
 		if (!userExists) {
@@ -81,6 +81,10 @@ const Mutation = {
 		};
 
 		db.posts.push(post);
+
+		if (args.data.published) {
+			pubsub.publish('post', { post });
+		}
 
 		return post;
 	},
@@ -133,8 +137,8 @@ const Mutation = {
 			...args.data
 		};
 
-        db.comments.push(comment);
-        pubsub.publish(`comment ${args.data.post}`, { comment })
+		db.comments.push(comment);
+		pubsub.publish(`comment ${args.data.post}`, { comment });
 
 		return comment;
 	},
@@ -145,17 +149,17 @@ const Mutation = {
 	},
 	updateComment(parent, args, { db }, info) {
 		const { id, data } = args;
-        const comment = db.comments.find((comment) => comment.id === id);
-        
-        if(!comment){
-            throw new Error('Comment not found')
-        }
+		const comment = db.comments.find((comment) => comment.id === id);
 
-        if(typeof data.text === 'string'){
-            comment.text = data.text
-        }
+		if (!comment) {
+			throw new Error('Comment not found');
+		}
 
-        return comment
+		if (typeof data.text === 'string') {
+			comment.text = data.text;
+		}
+
+		return comment;
 	}
 };
 
